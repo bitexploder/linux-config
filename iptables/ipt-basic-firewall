@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Setup a default "deny" policy
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+
+# Packets from the host are OK
+iptables -P OUTPUT ACCEPT
+
+# Allow related and established
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# -A (Append) to -i eth1 (interface eth1) -p udp (protocol udp) --dport 53 (on port 53) -j ACCEPT (jump to ACCEPT)
+iptables -A INPUT -i eth1 -p udp --dport 53 -j ACCEPT
+iptables -A INPUT -i eth1 --dport 22 -j ACCEPT
+# Optionally allow SSH on external interface
+# iptables -A INPUT -i eth0 --dport 22 -j ACCEPT
+iptables -A INPUT -i eth1 -p udp --dport 67:68 --sport 67:68 -j ACCEPT
+
+# Router tricks
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+# Let eth1 and eth0 forward packets to each other
+iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
+iptables -A FORWARD -i eth0 -o eth1 -j ACCEPT
+
